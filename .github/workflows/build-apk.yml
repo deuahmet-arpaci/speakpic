@@ -23,7 +23,7 @@ jobs:
           gradle-version: 8.13
 
       # 1) Her zaman: denemek için debug APK
-      - name: Debug APK üret
+      - name: Debug APK uret
         run: gradle assembleDebug
 
       - uses: actions/upload-artifact@v4
