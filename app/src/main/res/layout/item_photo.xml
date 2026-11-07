@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="2dp">
+
+    <com.speakpic.app.SquareImageView
+        android:id="@+id/photoImage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#222222"
+        android:scaleType="centerCrop" />
+
+    <ImageView
+        android:id="@+id/noteBadge"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="6dp"
+        android:background="@drawable/badge_bg"
+        android:importantForAccessibility="no"
+        android:padding="5dp"
+        android:src="@drawable/ic_mic"
+        android:visibility="gone" />
+
+    <FrameLayout
+        android:id="@+id/selOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/sel_overlay_bg"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="top|end"
+            android:layout_margin="6dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_check" />
+    </FrameLayout>
+</FrameLayout>

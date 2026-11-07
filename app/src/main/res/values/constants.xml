@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">SpeakPic</string>
+    <string name="hdr_label" translatable="false">HDR</string>
+    <string name="rec_label" translatable="false">REC</string>
+    <string name="clock_format" translatable="false">\'SpeakPic\' · HH:mm</string>
+</resources>
