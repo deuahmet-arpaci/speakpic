@@ -1,4 +1,4 @@
-name: APK Derle
+name: SpeakPic Derle
 
 on:
   push:
@@ -8,18 +8,49 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
+
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 8.7
+          gradle-version: 8.13
+
+      # 1) Her zaman: denemek için debug APK
       - name: Debug APK üret
         run: gradle assembleDebug
+
       - uses: actions/upload-artifact@v4
         with:
-          name: CameraApp-debug-apk
+          name: SpeakPic-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      # 2) Yalnızca imza sırları (secrets) tanımlıysa: Play Store için imzalı AAB + imzalı APK
+      - name: Anahtar deposunu çöz
+        if: env.KEYSTORE_B64 != ''
+        run: echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+
+      - name: İmzalı release AAB + APK üret
+        if: env.KEYSTORE_B64 != ''
+        env:
+          SIGNING_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          VERSION_CODE: ${{ github.run_number }}
+        run: gradle bundleRelease assembleRelease
+
+      - name: Release dosyalarını yükle
+        if: env.KEYSTORE_B64 != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpeakPic-release-signed
+          path: |
+            app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/apk/release/app-release.apk
