@@ -25,13 +25,14 @@ Take a photo, tap the microphone and simply describe it. SpeakPic turns your spe
 ★ Listen to a photo's description read aloud
 ★ Share a photo (with its description), copy the description, rename, edit or delete photos
 ★ Select many photos at once to share or delete
-★ Camera with tap-to-focus, pinch zoom, grid, flash and HDR (on supported devices)
+★ Camera with photo and video modes, tap-to-focus, pinch zoom, grid, flash/torch and HDR (on supported devices)
+★ Share a photo with its description as caption text, printed on the image, or as the original file
 ★ 10 languages – switch the language inside the app: English, Türkçe, Deutsch, Français, Español, Italiano, Português, Русский, العربية, 日本語
 ★ No account, no ads, no tracking
 
 GOOD TO KNOW
 • Speech recognition is provided by your device's speech service. Depending on your device, an internet connection or an offline language pack may be required.
-• Descriptions can be saved in JPEG, PNG and WebP images.
+• Descriptions can be saved in JPEG, PNG and WebP images. Messaging apps such as WhatsApp remove this hidden metadata when they re-compress a photo; use the "printed on the image" share option to keep the text visible.
 • To work with photos taken by other apps, allow photo access when asked. Android asks for your confirmation before SpeakPic edits or deletes those photos.
 ```
 
@@ -55,13 +56,14 @@ Fotoğraf çekin, mikrofona dokunun ve anlatın. SpeakPic konuşmanızı yazıya
 ★ Fotoğrafın açıklamasını sesli dinleyin
 ★ Fotoğrafı (açıklamasıyla) paylaşın, açıklamayı kopyalayın, yeniden adlandırın, düzenleyin, silin
 ★ Çok sayıda fotoğrafı birden seçip paylaşın veya silin
-★ Dokunarak odaklama, parmakla yakınlaştırma, ızgara, flaş ve HDR (destekleyen cihazlarda) olan kamera
+★ Fotoğraf ve video modlu kamera: dokunarak odaklama, parmakla yakınlaştırma, ızgara, flaş/fener ve HDR (destekleyen cihazlarda)
+★ Fotoğrafı açıklamasıyla paylaşın: mesaj metni olarak, görselin üzerine yazılı ya da orijinal dosya olarak
 ★ 10 dil – dili uygulama içinden değiştirin: Türkçe, English, Deutsch, Français, Español, Italiano, Português, Русский, العربية, 日本語
 ★ Hesap yok, reklam yok, izleme yok
 
 BİLMENİZDE FAYDA VAR
 • Konuşma tanıma cihazınızın konuşma servisi tarafından sağlanır. Cihazınıza göre internet bağlantısı ya da çevrimdışı dil paketi gerekebilir.
-• Açıklamalar JPEG, PNG ve WebP görüntülere kaydedilebilir.
+• Açıklamalar JPEG, PNG ve WebP görüntülere kaydedilebilir. WhatsApp gibi uygulamalar fotoğrafı yeniden sıkıştırırken bu gizli bilgiyi siler; metnin görünür kalması için "görselin üzerine yazılı" paylaşım seçeneğini kullanın.
 • Başka uygulamalarla çekilmiş fotoğraflarla çalışmak için istenince fotoğraf erişimine izin verin. SpeakPic bu fotoğrafları düzenlemeden veya silmeden önce Android sizden onay ister.
 ```
 
@@ -72,10 +74,10 @@ Form İngilizce; aşağıdaki gerekçeyi kullanabilirsiniz:
 
 ```
 SpeakPic is a camera and gallery app whose core feature is adding and managing voice-transcribed
-descriptions for the user's photos. The in-app gallery lists all of the user's photos (including those
+descriptions for the user's photos. The in-app gallery lists all of the user's photos and videos (including those
 taken with other apps), lets the user add/edit/clear a description stored in the image's EXIF data, filter
 photos that have descriptions, read descriptions aloud, and perform batch actions (share, delete) and
-renaming. This requires persistent, library-wide read access (READ_MEDIA_IMAGES) to browse and
+renaming. This requires persistent, library-wide read access (READ_MEDIA_IMAGES and READ_MEDIA_VIDEO) to browse and
 search the whole library and to read EXIF descriptions from many files. The Android Photo Picker cannot
 provide a browsable, filterable, persistent library view or batch management, so it is not sufficient for
 the core functionality. Writing or deleting photos created by other apps always goes through the

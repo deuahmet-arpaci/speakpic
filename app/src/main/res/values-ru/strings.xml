@@ -67,4 +67,13 @@
     <string name="language_title">Язык</string>
     <string name="language_system">Как в системе</string>
     <string name="tts_missing">Нет голоса для синтеза речи на этом языке. Установите его в Настройки > Синтез речи.</string>
+    <string name="mode_photo">ФОТО</string>
+    <string name="mode_video">ВИДЕО</string>
+    <string name="video_saved">Видео сохранено</string>
+    <string name="video_note_info">Текстовые описания доступны только для фотографий.</string>
+    <string name="share_how">Как поделиться?</string>
+    <string name="share_opt_caption">Фото + описание текстом сообщения</string>
+    <string name="share_opt_burned">Фото с описанием на изображении</string>
+    <string name="share_opt_original">Исходный файл (EXIF сохраняется, если поддерживается)</string>
+    <string name="preparing">Подготовка…</string>
 </resources>

@@ -17,17 +17,25 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.MediaController
 import android.widget.PopupMenu
 import android.widget.TextView
+import android.widget.VideoView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.bumptech.glide.Glide
 import java.util.Locale
 
 class ViewerActivity : MediaActivity() {
 
+    companion object {
+        const val EXTRA_VIDEO = "video"
+    }
+
     private lateinit var uri: Uri
+    private var isVideo = false
     private var mime: String? = null
     private var note = ""
 
@@ -36,7 +44,10 @@ class ViewerActivity : MediaActivity() {
     private var speaking = false
     private lateinit var speech: SpeechHelper
 
+    private lateinit var photoView: ImageView
+    private lateinit var videoView: VideoView
     private lateinit var noteView: TextView
+    private lateinit var noteButtons: View
     private lateinit var titleView: TextView
     private lateinit var speakButton: ImageButton
     private lateinit var micButton: ImageButton
@@ -59,8 +70,12 @@ class ViewerActivity : MediaActivity() {
             return
         }
         uri = data
+        isVideo = intent.getBooleanExtra(EXTRA_VIDEO, false)
 
+        photoView = findViewById(R.id.photoView)
+        videoView = findViewById(R.id.videoView)
         noteView = findViewById(R.id.noteView)
+        noteButtons = findViewById(R.id.noteButtons)
         titleView = findViewById(R.id.titleView)
         speakButton = findViewById(R.id.speakButton)
         micButton = findViewById(R.id.micButton)
@@ -80,31 +95,44 @@ class ViewerActivity : MediaActivity() {
             }
         )
 
-        Glide.with(this).load(uri).into(findViewById<ImageView>(R.id.photoView))
-
         findViewById<View>(R.id.backButton).setOnClickListener { finish() }
-        findViewById<View>(R.id.shareButton).setOnClickListener {
-            shareUris(listOf(uri), note.ifEmpty { null }, mime)
-        }
-        findViewById<View>(R.id.deleteButton).setOnClickListener { deletePhoto() }
+        findViewById<View>(R.id.shareButton).setOnClickListener { onShareClicked() }
+        findViewById<View>(R.id.deleteButton).setOnClickListener { deleteItem() }
         findViewById<View>(R.id.moreButton).setOnClickListener { showMore(it) }
         speakButton.setOnClickListener { if (speaking) stopSpeaking() else speak() }
         micButton.setOnClickListener { onMicClicked() }
         findViewById<View>(R.id.editNoteButton).setOnClickListener { showEditDialog() }
         copyButton.setOnClickListener { copyNote() }
 
-        // Başlık ve açıklama doğrudan dosyadan (EXIF) okunur.
+        if (isVideo) setupVideo() else Glide.with(this).load(uri).into(photoView)
+
+        // Başlık ve (fotoğraflar için) açıklama doğrudan dosyadan okunur.
         io.execute {
             val name = PhotoStore.name(this, uri)
             val type = contentResolver.getType(uri)
-            val n = ExifNotes.read(this, uri).orEmpty()
+            val n = if (isVideo) "" else ExifNotes.read(this, uri).orEmpty()
             runOnUiThread {
                 mime = type
                 titleView.text = name
-                showNote(n)
-                if (n.isNotEmpty()) speak() // açılınca otomatik oku
+                if (!isVideo) {
+                    showNote(n)
+                    if (n.isNotEmpty()) speak() // açılınca otomatik oku
+                }
             }
         }
+    }
+
+    private fun setupVideo() {
+        photoView.visibility = View.GONE
+        videoView.visibility = View.VISIBLE
+        noteButtons.visibility = View.GONE
+        noteView.setText(R.string.video_note_info)
+        noteView.alpha = 0.8f
+        val controller = MediaController(this)
+        controller.setAnchorView(videoView)
+        videoView.setMediaController(controller)
+        videoView.setVideoURI(uri)
+        videoView.setOnPreparedListener { videoView.start() }
     }
 
     private fun showNote(text: String) {
@@ -119,6 +147,54 @@ class ViewerActivity : MediaActivity() {
         val a = if (text.isEmpty()) 0.4f else 1f
         speakButton.alpha = a
         copyButton.alpha = a
+    }
+
+    // ------------------------------------------------------------------ Paylaşma
+
+    private fun onShareClicked() {
+        if (isVideo) {
+            shareUris(listOf(uri), null, mime ?: "video/*")
+            return
+        }
+        val items = arrayOf(
+            getString(R.string.share_opt_caption),
+            getString(R.string.share_opt_burned),
+            getString(R.string.share_opt_original)
+        )
+        AlertDialog.Builder(this)
+            .setTitle(R.string.share_how)
+            .setItems(items) { _, which ->
+                when (which) {
+                    // WhatsApp gibi uygulamalar fotoğrafın altına mesaj metnini koyar
+                    0 -> shareUris(listOf(uri), note.ifEmpty { null }, mime)
+                    // Açıklama piksellere yazılır: yeniden sıkıştırılsa da kaybolmaz
+                    1 -> shareWithPrintedCaption()
+                    // Orijinal dosya (EXIF dahil); sıkıştırıp sıkıştırmamak alıcı uygulamaya bağlı
+                    2 -> shareUris(listOf(uri), null, "application/octet-stream")
+                }
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
+    }
+
+    private fun shareWithPrintedCaption() {
+        if (note.isEmpty()) {
+            toast(R.string.no_description)
+            return
+        }
+        toast(R.string.preparing)
+        val text = note
+        io.execute {
+            val file = CaptionRenderer.render(this, uri, text)
+            runOnUiThread {
+                if (file == null) {
+                    toast(getString(R.string.error_generic, ""))
+                } else {
+                    val shareUri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+                    shareUris(listOf(shareUri), null, "image/jpeg")
+                }
+            }
+        }
     }
 
     // ------------------------------------------------------------------ Sesli okuma
@@ -170,7 +246,8 @@ class ViewerActivity : MediaActivity() {
     private fun setSpeaking(value: Boolean) {
         speaking = value
         speakButton.setImageResource(if (value) R.drawable.ic_stop else R.drawable.ic_volume)
-        speakButton.contentDescription = getString(if (value) R.string.action_stop else R.string.action_read_aloud)
+        speakButton.contentDescription =
+            getString(if (value) R.string.action_stop else R.string.action_read_aloud)
     }
 
     // ------------------------------------------------------------------ Sesle / elle açıklama
@@ -261,11 +338,11 @@ class ViewerActivity : MediaActivity() {
         toast(R.string.desc_copied)
     }
 
-    // ------------------------------------------------------------------ Fotoğraf işlemleri
+    // ------------------------------------------------------------------ Dosya işlemleri
 
     private fun showMore(anchor: View) {
         val popup = PopupMenu(this, anchor)
-        popup.menu.add(0, 1, 0, R.string.action_edit_photo)
+        if (!isVideo) popup.menu.add(0, 1, 0, R.string.action_edit_photo)
         popup.menu.add(0, 2, 1, R.string.action_rename)
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -311,7 +388,7 @@ class ViewerActivity : MediaActivity() {
             .show()
     }
 
-    private fun deletePhoto() {
+    private fun deleteItem() {
         stopSpeaking()
         requestDelete(listOf(uri)) {
             PhotoStore.forget(listOf(uri))
@@ -328,6 +405,7 @@ class ViewerActivity : MediaActivity() {
             speech.cancel()
             stopSpeaking()
         }
+        if (isVideo && ::videoView.isInitialized) videoView.pause()
     }
 
     override fun onDestroy() {

@@ -67,4 +67,13 @@
     <string name="language_title">Sprache</string>
     <string name="language_system">Systemstandard</string>
     <string name="tts_missing">Keine Sprachausgabe für diese Sprache. Installiere eine unter Einstellungen > Text-to-Speech.</string>
+    <string name="mode_photo">FOTO</string>
+    <string name="mode_video">VIDEO</string>
+    <string name="video_saved">Video gespeichert</string>
+    <string name="video_note_info">Textbeschreibungen sind nur für Fotos verfügbar.</string>
+    <string name="share_how">Wie teilen?</string>
+    <string name="share_opt_caption">Foto + Beschreibung als Nachrichtentext</string>
+    <string name="share_opt_burned">Foto mit aufgedruckter Beschreibung</string>
+    <string name="share_opt_original">Originaldatei (EXIF bleibt, wo unterstützt)</string>
+    <string name="preparing">Wird vorbereitet …</string>
 </resources>

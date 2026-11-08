@@ -67,4 +67,13 @@
     <string name="language_title">言語</string>
     <string name="language_system">システムのデフォルト</string>
     <string name="tts_missing">この言語の読み上げ音声がありません。設定 > テキスト読み上げ からインストールしてください。</string>
+    <string name="mode_photo">写真</string>
+    <string name="mode_video">動画</string>
+    <string name="video_saved">動画を保存しました</string>
+    <string name="video_note_info">テキストの説明は写真でのみ利用できます。</string>
+    <string name="share_how">共有方法を選択</string>
+    <string name="share_opt_caption">写真＋説明をメッセージ文として</string>
+    <string name="share_opt_burned">説明を画像に書き込んだ写真</string>
+    <string name="share_opt_original">元のファイル（対応アプリではEXIFを保持）</string>
+    <string name="preparing">準備中…</string>
 </resources>

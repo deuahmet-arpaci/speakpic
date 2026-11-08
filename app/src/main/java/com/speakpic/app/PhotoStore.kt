@@ -8,9 +8,15 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
-data class Photo(val uri: Uri, val name: String, val mime: String?)
+data class Photo(
+    val uri: Uri,
+    val name: String,
+    val mime: String?,
+    val dateAdded: Long,
+    val isVideo: Boolean
+)
 
-/** Cihazdaki tüm fotoğrafları (diğer uygulamalarınkiler dahil) listeler; açıklama bilgisini önbellekler. */
+/** Cihazdaki tüm fotoğraf ve videoları (diğer uygulamalarınkiler dahil) listeler; açıklama bilgisini önbellekler. */
 object PhotoStore {
 
     /** Küçük resimdeki açıklama rozetini arka planda okumak için. */
@@ -19,30 +25,46 @@ object PhotoStore {
     // değer: açıklama metni; "" = açıklama yok
     private val notes = ConcurrentHashMap<Uri, String>()
 
-    private val collection: Uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+    private val imageCollection: Uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+    private val videoCollection: Uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
 
-    fun all(ctx: Context): List<Photo> {
-        val out = ArrayList<Photo>()
+    private fun query(ctx: Context, collection: Uri, isVideo: Boolean, out: MutableList<Photo>) {
         val projection = arrayOf(
-            MediaStore.Images.Media._ID,
-            MediaStore.Images.Media.DISPLAY_NAME,
-            MediaStore.Images.Media.MIME_TYPE
+            MediaStore.MediaColumns._ID,
+            MediaStore.MediaColumns.DISPLAY_NAME,
+            MediaStore.MediaColumns.MIME_TYPE,
+            MediaStore.MediaColumns.DATE_ADDED
         )
         ctx.contentResolver.query(
             collection, projection, null, null,
-            "${MediaStore.Images.Media.DATE_ADDED} DESC"
+            "${MediaStore.MediaColumns.DATE_ADDED} DESC"
         )?.use { c ->
-            val idCol = c.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
-            val nameCol = c.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
-            val mimeCol = c.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE)
+            val idCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
+            val nameCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+            val mimeCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE)
+            val dateCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_ADDED)
             while (c.moveToNext()) {
                 out += Photo(
                     ContentUris.withAppendedId(collection, c.getLong(idCol)),
                     c.getString(nameCol).orEmpty(),
-                    c.getString(mimeCol)
+                    c.getString(mimeCol),
+                    c.getLong(dateCol),
+                    isVideo
                 )
             }
         }
+    }
+
+    /** Fotoğraflar + videolar, yeniden eskiye. */
+    fun all(ctx: Context): List<Photo> {
+        val out = ArrayList<Photo>()
+        query(ctx, imageCollection, false, out)
+        try {
+            query(ctx, videoCollection, true, out)
+        } catch (e: Exception) {
+            // video erişimi yoksa yalnızca fotoğraflar listelenir
+        }
+        out.sortByDescending { it.dateAdded }
         return out
     }
 

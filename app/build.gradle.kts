@@ -18,7 +18,7 @@ android {
         targetSdk = 36
         // CI'da her derlemede otomatik artar (Play her yüklemede daha büyük versionCode ister).
         versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()
-        versionName = "1.0.0"
+        versionName = "1.1.0"
     }
 
     signingConfigs {
@@ -69,6 +69,7 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:$cameraxVersion")
     implementation("androidx.camera:camera-view:$cameraxVersion")
     implementation("androidx.camera:camera-extensions:$cameraxVersion")
+    implementation("androidx.camera:camera-video:$cameraxVersion")
 
     implementation("androidx.exifinterface:exifinterface:1.3.7")
     implementation("androidx.recyclerview:recyclerview:1.3.2")

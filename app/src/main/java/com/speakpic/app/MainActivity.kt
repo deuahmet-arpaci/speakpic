@@ -1,6 +1,7 @@
 package com.speakpic.app
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -27,9 +28,18 @@ import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
+import androidx.camera.core.UseCase
 import androidx.camera.extensions.ExtensionMode
 import androidx.camera.extensions.ExtensionsManager
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.FallbackStrategy
+import androidx.camera.video.MediaStoreOutputOptions
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recorder
+import androidx.camera.video.Recording
+import androidx.camera.video.VideoCapture
+import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
@@ -49,6 +59,12 @@ class MainActivity : MediaActivity() {
     private lateinit var zoomSlider: SeekBar
     private lateinit var thumb: ImageView
     private lateinit var micButton: ImageButton
+    private lateinit var shutterButton: View
+    private lateinit var modePhoto: TextView
+    private lateinit var modeVideo: TextView
+    private lateinit var recBar: View
+    private lateinit var recBarDot: View
+    private lateinit var recTimer: TextView
 
     // --- Bilgi paneli ---
     private lateinit var infoPanel: View
@@ -63,9 +79,13 @@ class MainActivity : MediaActivity() {
     // --- Durum ---
     private var camera: Camera? = null
     private var imageCapture: ImageCapture? = null
+    private var videoCapture: VideoCapture<Recorder>? = null
+    private var recording: Recording? = null
     private var extensionsManager: ExtensionsManager? = null
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var flashMode = ImageCapture.FLASH_MODE_OFF
+    private var torchOn = false
+    private var videoMode = false
     private var hdrOn = false
     private var sliding = false
 
@@ -92,6 +112,10 @@ class MainActivity : MediaActivity() {
             if (granted) startListening() else toast(R.string.mic_permission_needed)
         }
 
+    // Video kaydı için mikrofon izni: reddedilirse sessiz video kaydedilir
+    private val videoAudioPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { startRecording() }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         edgeToEdgeDark()
@@ -112,6 +136,7 @@ class MainActivity : MediaActivity() {
 
         setupControls()
         setupGestures()
+        updateModeUi()
 
         // Dil değişince/ekran yeniden oluşturulunca son fotoğrafı koru
         savedInstanceState?.getString("photo")?.let { saved ->
@@ -151,6 +176,12 @@ class MainActivity : MediaActivity() {
         zoomSlider = findViewById(R.id.zoomSlider)
         thumb = findViewById(R.id.thumb)
         micButton = findViewById(R.id.micButton)
+        shutterButton = findViewById(R.id.shutterButton)
+        modePhoto = findViewById(R.id.modePhoto)
+        modeVideo = findViewById(R.id.modeVideo)
+        recBar = findViewById(R.id.recBar)
+        recBarDot = findViewById(R.id.recBarDot)
+        recTimer = findViewById(R.id.recTimer)
         infoPanel = findViewById(R.id.infoPanel)
         tabMeta = findViewById(R.id.tabMeta)
         tabNote = findViewById(R.id.tabNote)
@@ -162,18 +193,22 @@ class MainActivity : MediaActivity() {
     }
 
     private fun setupControls() {
-        findViewById<View>(R.id.shutterButton).setOnClickListener { takePhoto() }
+        shutterButton.setOnClickListener { if (videoMode) toggleRecording() else takePhoto() }
         findViewById<View>(R.id.switchButton).setOnClickListener {
+            if (recording != null) return@setOnClickListener
             lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK)
                 CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
             startCamera()
         }
         val openGallery = View.OnClickListener {
+            if (recording != null) return@OnClickListener
             startActivity(Intent(this, GalleryActivity::class.java))
         }
         findViewById<View>(R.id.galleryButton).setOnClickListener(openGallery)
         thumb.setOnClickListener(openGallery)
-        findViewById<View>(R.id.languageButton).setOnClickListener { LanguageManager.show(this) }
+        findViewById<View>(R.id.languageButton).setOnClickListener {
+            if (recording == null) LanguageManager.show(this)
+        }
 
         findViewById<View>(R.id.gridButton).setOnClickListener {
             gridOverlay.visibility =
@@ -184,6 +219,8 @@ class MainActivity : MediaActivity() {
             hdrOn = !hdrOn
             startCamera()
         }
+        modePhoto.setOnClickListener { setMode(false) }
+        modeVideo.setOnClickListener { setMode(true) }
 
         zoomSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -198,6 +235,32 @@ class MainActivity : MediaActivity() {
         tabMeta.setOnClickListener { selectTab(0) }
         tabNote.setOnClickListener { selectTab(1) }
         selectTab(0)
+    }
+
+    // ------------------------------------------------------------------ Mod (fotoğraf / video)
+
+    private fun setMode(video: Boolean) {
+        if (recording != null || videoMode == video) return
+        videoMode = video
+        updateModeUi()
+        startCamera()
+    }
+
+    private fun updateModeUi() {
+        val gold = Color.parseColor("#FFD54F")
+        modePhoto.setTextColor(if (!videoMode) gold else Color.WHITE)
+        modeVideo.setTextColor(if (videoMode) gold else Color.WHITE)
+        shutterButton.setBackgroundResource(if (videoMode) R.drawable.shutter_video_bg else R.drawable.shutter_bg)
+        flashMode = ImageCapture.FLASH_MODE_OFF
+        torchOn = false
+        updateFlashIcon(false)
+        if (videoMode) {
+            speech.cancel()
+            handler.removeCallbacks(hideMicRunnable)
+            micButton.visibility = View.GONE
+            hidePanel()
+            hdrButton.visibility = View.GONE
+        }
     }
 
     // ------------------------------------------------------------------ Kamera
@@ -218,24 +281,45 @@ class MainActivity : MediaActivity() {
         val preview = Preview.Builder().build().also {
             it.setSurfaceProvider(previewView.surfaceProvider)
         }
-        imageCapture = ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-            .setFlashMode(flashMode)
-            .build()
+        val cases = mutableListOf<UseCase>(preview)
+        if (videoMode) {
+            val recorder = Recorder.Builder()
+                .setQualitySelector(
+                    QualitySelector.from(
+                        Quality.FHD,
+                        FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
+                    )
+                )
+                .build()
+            val vc = VideoCapture.withOutput(recorder)
+            videoCapture = vc
+            imageCapture = null
+            cases += vc
+        } else {
+            val ic = ImageCapture.Builder()
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                .setFlashMode(flashMode)
+                .build()
+            imageCapture = ic
+            videoCapture = null
+            cases += ic
+        }
 
         var selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
         val em = extensionsManager
-        val hdrAvailable = try {
+        val hdrAvailable = !videoMode && try {
             em != null && em.isExtensionAvailable(selector, ExtensionMode.HDR)
         } catch (e: Exception) { false }
         hdrButton.visibility = if (hdrAvailable) View.VISIBLE else View.GONE
         if (!hdrAvailable) hdrOn = false
         hdrButton.setTextColor(if (hdrOn) Color.parseColor("#FFD54F") else Color.WHITE)
-        if (hdrOn && em != null) selector = em.getExtensionEnabledCameraSelector(selector, ExtensionMode.HDR)
+        if (hdrOn && em != null && !videoMode) {
+            selector = em.getExtensionEnabledCameraSelector(selector, ExtensionMode.HDR)
+        }
 
         try {
             provider.unbindAll()
-            camera = provider.bindToLifecycle(this, selector, preview, imageCapture)
+            camera = provider.bindToLifecycle(this, selector, *cases.toTypedArray())
             camera?.cameraInfo?.zoomState?.observe(this) { state ->
                 if (!sliding) zoomSlider.progress = (state.linearZoom * 100).toInt()
             }
@@ -245,27 +329,43 @@ class MainActivity : MediaActivity() {
     }
 
     private fun cycleFlash() {
-        flashMode = when (flashMode) {
-            ImageCapture.FLASH_MODE_OFF -> ImageCapture.FLASH_MODE_ON
-            ImageCapture.FLASH_MODE_ON -> ImageCapture.FLASH_MODE_AUTO
-            else -> ImageCapture.FLASH_MODE_OFF
+        if (videoMode) {
+            torchOn = !torchOn
+            camera?.cameraControl?.enableTorch(torchOn)
+        } else {
+            flashMode = when (flashMode) {
+                ImageCapture.FLASH_MODE_OFF -> ImageCapture.FLASH_MODE_ON
+                ImageCapture.FLASH_MODE_ON -> ImageCapture.FLASH_MODE_AUTO
+                else -> ImageCapture.FLASH_MODE_OFF
+            }
+            imageCapture?.flashMode = flashMode
         }
-        imageCapture?.flashMode = flashMode
-        when (flashMode) {
-            ImageCapture.FLASH_MODE_ON -> {
+        updateFlashIcon(true)
+    }
+
+    /** Fotoğraf modunda flaş (kapalı/açık/otomatik), video modunda fener (kapalı/açık). */
+    private fun updateFlashIcon(showToast: Boolean) {
+        val state = when {
+            videoMode -> if (torchOn) 1 else 0
+            flashMode == ImageCapture.FLASH_MODE_ON -> 1
+            flashMode == ImageCapture.FLASH_MODE_AUTO -> 2
+            else -> 0
+        }
+        when (state) {
+            1 -> {
                 flashButton.setImageResource(R.drawable.ic_flash_on)
                 flashButton.setColorFilter(Color.parseColor("#FFD54F"))
-                toast(R.string.flash_on)
+                if (showToast) toast(R.string.flash_on)
             }
-            ImageCapture.FLASH_MODE_AUTO -> {
+            2 -> {
                 flashButton.setImageResource(R.drawable.ic_flash_on)
                 flashButton.setColorFilter(Color.parseColor("#80D8FF"))
-                toast(R.string.flash_auto)
+                if (showToast) toast(R.string.flash_auto)
             }
             else -> {
                 flashButton.setImageResource(R.drawable.ic_flash_off)
                 flashButton.setColorFilter(Color.WHITE)
-                toast(R.string.flash_off)
+                if (showToast) toast(R.string.flash_off)
             }
         }
     }
@@ -309,6 +409,8 @@ class MainActivity : MediaActivity() {
             focusRing.animate().alpha(0f).setStartDelay(700).setDuration(300).start()
         }.start()
     }
+
+    // ------------------------------------------------------------------ Fotoğraf
 
     private fun takePhoto() {
         val capture = imageCapture ?: return
@@ -358,7 +460,90 @@ class MainActivity : MediaActivity() {
         }
     }
 
-    // ------------------------------------------------------------------ Mikrofon
+    // ------------------------------------------------------------------ Video
+
+    private fun toggleRecording() {
+        val active = recording
+        if (active != null) {
+            active.stop()
+            return
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            videoAudioPermission.launch(Manifest.permission.RECORD_AUDIO)
+            return
+        }
+        startRecording()
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun startRecording() {
+        val vc = videoCapture ?: return
+        if (recording != null) return
+        speech.cancel()
+
+        val name = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(System.currentTimeMillis())
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, "SpeakPic_$name")
+            put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, "Movies/SpeakPic")
+        }
+        val output = MediaStoreOutputOptions.Builder(
+            contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+        ).setContentValues(values).build()
+
+        val hasAudio = ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+        var pending = vc.output.prepareRecording(this, output)
+        if (hasAudio) pending = pending.withAudioEnabled()
+
+        recording = pending.start(ContextCompat.getMainExecutor(this)) { event ->
+            when (event) {
+                is VideoRecordEvent.Start -> setRecordingUi(true)
+                is VideoRecordEvent.Status -> {
+                    val sec = event.recordingStats.recordedDurationNanos / 1_000_000_000L
+                    recTimer.text = String.format(Locale.US, "%02d:%02d", sec / 60, sec % 60)
+                }
+                is VideoRecordEvent.Finalize -> {
+                    recording = null
+                    setRecordingUi(false)
+                    if (!event.hasError()) {
+                        onVideoSaved(event.outputResults.outputUri)
+                    } else {
+                        toast(getString(R.string.error_generic, event.cause?.message ?: event.error.toString()))
+                    }
+                }
+            }
+        }
+    }
+
+    private fun setRecordingUi(on: Boolean) {
+        recBar.visibility = if (on) View.VISIBLE else View.GONE
+        shutterButton.setBackgroundResource(
+            if (on) R.drawable.shutter_rec_bg else R.drawable.shutter_video_bg
+        )
+        if (on) {
+            recTimer.setText(R.string.timer_zero)
+            recBarDot.startAnimation(AlphaAnimation(1f, 0.15f).apply {
+                duration = 600
+                repeatMode = Animation.REVERSE
+                repeatCount = Animation.INFINITE
+            })
+        } else {
+            recBarDot.clearAnimation()
+        }
+    }
+
+    private fun onVideoSaved(uri: Uri) {
+        lastPhotoUri = null
+        listenTarget = null
+        currentNote = ""
+        loadThumb(uri)
+        toast(R.string.video_saved)
+    }
+
+    // ------------------------------------------------------------------ Mikrofon (fotoğraf açıklaması)
 
     private fun showMicButton() {
         micButton.setImageResource(R.drawable.ic_mic)
@@ -467,6 +652,7 @@ class MainActivity : MediaActivity() {
     override fun onStop() {
         super.onStop()
         speech.cancel()
+        recording?.stop() // arka plana geçerken kaydı düzgünce bitir
     }
 
     override fun onDestroy() {

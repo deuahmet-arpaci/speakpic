@@ -52,6 +52,41 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- Video kaydı sırasında: yanıp sönen nokta + süre -->
+        <LinearLayout
+            android:id="@+id/recBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/pill_bg"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="4dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/clockText">
+
+            <View
+                android:id="@+id/recBarDot"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:background="@drawable/rec_dot" />
+
+            <TextView
+                android:id="@+id/recTimer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/timer_zero"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <!-- Üst sağ: dil + flaş + HDR -->
         <LinearLayout
             android:id="@+id/topPill"
@@ -205,18 +240,60 @@
             app:layout_constraintStart_toEndOf="@id/shutterButton"
             app:layout_constraintTop_toTopOf="@id/shutterButton" />
 
+        <!-- Fotoğraf / Video modu -->
+        <LinearLayout
+            android:id="@+id/modeBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/pill_bg"
+            android:orientation="horizontal"
+            android:padding="2dp"
+            app:layout_constraintBottom_toTopOf="@id/shutterButton"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <TextView
+                android:id="@+id/modePhoto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="8dp"
+                android:text="@string/mode_photo"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/modeVideo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="8dp"
+                android:text="@string/mode_video"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <!-- Fotoğraf çekildikten sonra çıkan mikrofon -->
         <ImageButton
             android:id="@+id/micButton"
             android:layout_width="68dp"
             android:layout_height="68dp"
-            android:layout_marginBottom="28dp"
+            android:layout_marginBottom="12dp"
             android:background="@drawable/mic_bg"
             android:contentDescription="@string/action_add_voice"
             android:padding="18dp"
             android:src="@drawable/ic_mic"
             android:visibility="gone"
-            app:layout_constraintBottom_toTopOf="@id/shutterButton"
+            app:layout_constraintBottom_toTopOf="@id/modeBar"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 

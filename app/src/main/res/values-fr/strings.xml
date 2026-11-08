@@ -67,4 +67,13 @@
     <string name="language_title">Langue</string>
     <string name="language_system">Par défaut du système</string>
     <string name="tts_missing">Aucune voix de synthèse pour cette langue. Installez-en une dans Paramètres > Synthèse vocale.</string>
+    <string name="mode_photo">PHOTO</string>
+    <string name="mode_video">VIDÉO</string>
+    <string name="video_saved">Vidéo enregistrée</string>
+    <string name="video_note_info">Les descriptions textuelles ne sont disponibles que pour les photos.</string>
+    <string name="share_how">Comment partager ?</string>
+    <string name="share_opt_caption">Photo + description en texte du message</string>
+    <string name="share_opt_burned">Photo avec la description imprimée dessus</string>
+    <string name="share_opt_original">Fichier original (EXIF conservé si pris en charge)</string>
+    <string name="preparing">Préparation…</string>
 </resources>

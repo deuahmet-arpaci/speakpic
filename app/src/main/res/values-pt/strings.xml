@@ -67,4 +67,13 @@
     <string name="language_title">Idioma</string>
     <string name="language_system">Padrão do sistema</string>
     <string name="tts_missing">Não há voz de leitura para este idioma. Instale uma em Configurações > Texto para voz.</string>
+    <string name="mode_photo">FOTO</string>
+    <string name="mode_video">VÍDEO</string>
+    <string name="video_saved">Vídeo salvo</string>
+    <string name="video_note_info">As descrições de texto estão disponíveis apenas para fotos.</string>
+    <string name="share_how">Como compartilhar?</string>
+    <string name="share_opt_caption">Foto + descrição como texto da mensagem</string>
+    <string name="share_opt_burned">Foto com a descrição impressa</string>
+    <string name="share_opt_original">Arquivo original (mantém EXIF onde houver suporte)</string>
+    <string name="preparing">Preparando…</string>
 </resources>

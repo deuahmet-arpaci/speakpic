@@ -4,4 +4,5 @@
     <string name="hdr_label" translatable="false">HDR</string>
     <string name="rec_label" translatable="false">REC</string>
     <string name="clock_format" translatable="false">\'SpeakPic\' · HH:mm</string>
+    <string name="timer_zero" translatable="false">00:00</string>
 </resources>

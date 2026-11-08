@@ -67,4 +67,13 @@
     <string name="language_title">Dil</string>
     <string name="language_system">Sistem varsayılanı</string>
     <string name="tts_missing">Bu dil için sesli okuma verisi yok. Ayarlar > Metin okuma bölümünden yükleyin.</string>
+    <string name="mode_photo">FOTOĞRAF</string>
+    <string name="mode_video">VİDEO</string>
+    <string name="video_saved">Video kaydedildi</string>
+    <string name="video_note_info">Metin açıklamaları yalnızca fotoğraflar için kullanılabilir.</string>
+    <string name="share_how">Nasıl paylaşılsın?</string>
+    <string name="share_opt_caption">Fotoğraf + açıklama mesaj metni olarak</string>
+    <string name="share_opt_burned">Açıklaması üzerine yazılmış fotoğraf</string>
+    <string name="share_opt_original">Orijinal dosya (destekleyen uygulamalarda EXIF korunur)</string>
+    <string name="preparing">Hazırlanıyor…</string>
 </resources>

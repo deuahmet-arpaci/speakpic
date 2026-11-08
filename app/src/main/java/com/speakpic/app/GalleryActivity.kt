@@ -101,9 +101,13 @@ class GalleryActivity : MediaActivity() {
     private fun mediaPermissions(): Array<String> = when {
         Build.VERSION.SDK_INT >= 34 -> arrayOf(
             Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO,
             Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
         )
-        Build.VERSION.SDK_INT >= 33 -> arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
+        Build.VERSION.SDK_INT >= 33 -> arrayOf(
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO
+        )
         else -> arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
     }
 
@@ -162,7 +166,7 @@ class GalleryActivity : MediaActivity() {
             progress.visibility = View.VISIBLE
             val snapshot = photos
             scanner.execute {
-                val noted = snapshot.filter { PhotoStore.noteOf(applicationContext, it.uri) != null }
+                val noted = snapshot.filter { !it.isVideo && PhotoStore.noteOf(applicationContext, it.uri) != null }
                 runOnUiThread {
                     if (gen == scanGen) {
                         progress.visibility = View.GONE
@@ -185,7 +189,11 @@ class GalleryActivity : MediaActivity() {
         if (adapter.selection.isNotEmpty()) {
             toggleSelect(photo)
         } else {
-            startActivity(Intent(this, ViewerActivity::class.java).setData(photo.uri))
+            startActivity(
+                Intent(this, ViewerActivity::class.java)
+                    .setData(photo.uri)
+                    .putExtra(ViewerActivity.EXTRA_VIDEO, photo.isVideo)
+            )
         }
     }
 
@@ -234,6 +242,7 @@ class PhotoAdapter(
         val img: ImageView = v.findViewById(R.id.photoImage)
         val badge: View = v.findViewById(R.id.noteBadge)
         val overlay: View = v.findViewById(R.id.selOverlay)
+        val videoBadge: View = v.findViewById(R.id.videoBadge)
     }
 
     fun submit(list: List<Photo>) {
@@ -266,6 +275,12 @@ class PhotoAdapter(
         holder.overlay.visibility = if (selection.contains(item.uri)) View.VISIBLE else View.GONE
         holder.itemView.setOnClickListener { onClick(item) }
         holder.itemView.setOnLongClickListener { onLongClick(item); true }
+
+        holder.videoBadge.visibility = if (item.isVideo) View.VISIBLE else View.GONE
+        if (item.isVideo) {
+            holder.badge.visibility = View.GONE
+            return
+        }
 
         val cached = PhotoStore.cachedNote(item.uri)
         if (cached != null) {

@@ -67,4 +67,13 @@
     <string name="language_title">اللغة</string>
     <string name="language_system">افتراضي النظام</string>
     <string name="tts_missing">لا يوجد صوت لتحويل النص إلى كلام لهذه اللغة. ثبّت واحداً من الإعدادات > تحويل النص إلى كلام.</string>
+    <string name="mode_photo">صورة</string>
+    <string name="mode_video">فيديو</string>
+    <string name="video_saved">تم حفظ الفيديو</string>
+    <string name="video_note_info">الأوصاف النصية متاحة للصور فقط.</string>
+    <string name="share_how">كيف تريد المشاركة؟</string>
+    <string name="share_opt_caption">الصورة + الوصف كنص الرسالة</string>
+    <string name="share_opt_burned">صورة مع الوصف مطبوعاً عليها</string>
+    <string name="share_opt_original">الملف الأصلي (يحتفظ بـ EXIF حيث يكون مدعوماً)</string>
+    <string name="preparing">جارٍ التحضير…</string>
 </resources>

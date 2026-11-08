@@ -23,6 +23,17 @@
         android:src="@drawable/ic_mic"
         android:visibility="gone" />
 
+    <ImageView
+        android:id="@+id/videoBadge"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center"
+        android:background="@drawable/badge_bg"
+        android:importantForAccessibility="no"
+        android:padding="6dp"
+        android:src="@drawable/ic_play"
+        android:visibility="gone" />
+
     <FrameLayout
         android:id="@+id/selOverlay"
         android:layout_width="match_parent"

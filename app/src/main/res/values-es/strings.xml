@@ -67,4 +67,13 @@
     <string name="language_title">Idioma</string>
     <string name="language_system">Predeterminado del sistema</string>
     <string name="tts_missing">No hay voz de síntesis para este idioma. Instala una en Ajustes > Texto a voz.</string>
+    <string name="mode_photo">FOTO</string>
+    <string name="mode_video">VÍDEO</string>
+    <string name="video_saved">Vídeo guardado</string>
+    <string name="video_note_info">Las descripciones de texto solo están disponibles para fotos.</string>
+    <string name="share_how">¿Cómo compartir?</string>
+    <string name="share_opt_caption">Foto + descripción como texto del mensaje</string>
+    <string name="share_opt_burned">Foto con la descripción impresa</string>
+    <string name="share_opt_original">Archivo original (conserva EXIF si la app lo admite)</string>
+    <string name="preparing">Preparando…</string>
 </resources>
