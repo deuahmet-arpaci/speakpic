@@ -36,3 +36,5 @@ fun Context.toastLong(@StringRes id: Int) = Toast.makeText(this, id, Toast.LENGT
 
 fun joinText(a: String, b: String): String =
     listOf(a, b).filter { it.isNotBlank() }.joinToString(" ")
+
+fun Context.dpToPx(v: Int): Int = (v * resources.displayMetrics.density).toInt()

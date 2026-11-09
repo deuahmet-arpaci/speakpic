@@ -1,6 +1,6 @@
 # SpeakPic
 
-Fotoğraf ve video çekin; fotoğraflarınıza sesle açıklama ekleyin: fotoğraf çekin, mikrofona dokunun, anlattıklarınız yazıya çevrilip
+Fotoğraf ve video çekin (video hızını kayıt sırasında değiştirin), gece modu ve boyut ayarları, filtreli düzenleyici ve isteğe bağlı yapay zekâ ile düzenleme; fotoğraflarınıza sesle açıklama ekleyin: fotoğraf çekin, mikrofona dokunun, anlattıklarınız yazıya çevrilip
 fotoğrafın EXIF verisine kaydedilsin. Galeride tüm fotoğraflarınızı (diğer uygulamalarınkiler dahil) görün,
 açıklama ekleyin/düzenleyin, paylaşın, silin, yeniden adlandırın; açıklamayı sesli dinleyin.
 10 dil: Türkçe, English, Deutsch, Français, Español, Italiano, Português, Русский, العربية, 日本語.

@@ -102,6 +102,14 @@ Kodda değişiklik → GitHub'a yükleyin → Actions yeni imzalı AAB üretir (
 - Ekran görüntüleri/metinler uygulamayı yansıtmıyor.
 - Mağaza metninde başka marka adları / yanıltıcı ifadeler.
 
+## v1.2 ile gelen yeni noktalar (yayın öncesi kontrol listesi)
+
+- **INTERNET izni eklendi** (yalnızca isteğe bağlı yapay zekâ düzenleme için). Gizlilik politikası ve Veri güvenliği formu buna göre güncellendi; politikayı yayınlamadan önce `[TARİH]`, `[ADINIZ]`, `[E-POSTA]` alanlarını doldurun.
+- **API anahtarı uygulamaya gömülü DEĞİL.** Kullanıcı kendi Anthropic anahtarını girer (yalnızca cihazda saklanır). Kendi anahtarınızı koda gömüp Play'e yüklemeyin: APK'dan çıkarılıp kötüye kullanılabilir. Herkese hazır AI sunmak isterseniz, anahtarı saklayan küçük bir sunucu (proxy) gerekir; bu ayrı bir iştir.
+- Yapay zekâ özelliğini test ederken Anthropic Console'da küçük bir harcama limiti belirlemeniz önerilir.
+- **Video hız değişimi:** kayıttan sonra Media3 ile yeniden kodlanır; uzun videolarda işlem birkaç on saniye sürebilir. Foto/video izni beyanı videoları da kapsıyor.
+- İlk kapalı test sürümünde yeni özellikleri (video hızı, gece modu, düzenleyici) farklı telefonlarda denetleyin; kameralar farklı davranabilir.
+
 ## Teknik notlar
 
 - Hedef API 36 (Android 16): Google'ın şartı. Uygulama tam ekran (edge-to-edge) çizer ve önerilen geri hareketini destekler.

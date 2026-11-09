@@ -23,7 +23,7 @@
                 android:id="@+id/backButton"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:background="@drawable/icon_btn_bg"
                 android:contentDescription="@string/action_back"
                 android:padding="12dp"
                 android:src="@drawable/ic_back" />
@@ -40,9 +40,10 @@
 
             <ImageButton
                 android:id="@+id/languageButton"
+            android:layout_marginStart="6dp"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:background="@drawable/icon_btn_bg"
                 android:contentDescription="@string/language_title"
                 android:padding="12dp"
                 android:src="@drawable/ic_language" />
@@ -63,7 +64,7 @@
                 android:id="@+id/selCancel"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:background="@drawable/icon_btn_bg"
                 android:contentDescription="@string/action_cancel"
                 android:padding="12dp"
                 android:src="@drawable/ic_close" />
@@ -80,18 +81,20 @@
 
             <ImageButton
                 android:id="@+id/selShare"
+            android:layout_marginStart="6dp"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:background="@drawable/icon_btn_bg"
                 android:contentDescription="@string/action_share"
                 android:padding="12dp"
                 android:src="@drawable/ic_share" />
 
             <ImageButton
                 android:id="@+id/selDelete"
+            android:layout_marginStart="6dp"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:background="@drawable/icon_btn_bg"
                 android:contentDescription="@string/action_delete"
                 android:padding="12dp"
                 android:src="@drawable/ic_delete" />

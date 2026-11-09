@@ -156,25 +156,26 @@ class ViewerActivity : MediaActivity() {
             shareUris(listOf(uri), null, mime ?: "video/*")
             return
         }
-        val items = arrayOf(
-            getString(R.string.share_opt_caption),
-            getString(R.string.share_opt_burned),
-            getString(R.string.share_opt_original)
-        )
-        AlertDialog.Builder(this)
-            .setTitle(R.string.share_how)
-            .setItems(items) { _, which ->
-                when (which) {
-                    // WhatsApp gibi uygulamalar fotoğrafın altına mesaj metnini koyar
-                    0 -> shareUris(listOf(uri), note.ifEmpty { null }, mime)
-                    // Açıklama piksellere yazılır: yeniden sıkıştırılsa da kaybolmaz
-                    1 -> shareWithPrintedCaption()
-                    // Orijinal dosya (EXIF dahil); sıkıştırıp sıkıştırmamak alıcı uygulamaya bağlı
-                    2 -> shareUris(listOf(uri), null, "application/octet-stream")
-                }
-            }
-            .setNegativeButton(R.string.action_cancel, null)
-            .show()
+        val view = layoutInflater.inflate(R.layout.dialog_share, null)
+        val dialog = AlertDialog.Builder(this).setView(view).create()
+        dialog.window?.setBackgroundDrawableResource(R.drawable.card_bg)
+        // WhatsApp gibi uygulamalar fotoğrafın altına mesaj metnini koyar
+        view.findViewById<View>(R.id.shareCaption).setOnClickListener {
+            dialog.dismiss()
+            shareUris(listOf(uri), note.ifEmpty { null }, mime)
+        }
+        // Açıklama piksellere yazılır: yeniden sıkıştırılsa da kaybolmaz
+        view.findViewById<View>(R.id.sharePrinted).setOnClickListener {
+            dialog.dismiss()
+            shareWithPrintedCaption()
+        }
+        // Orijinal dosya (EXIF dahil); sıkıştırıp sıkıştırmamak alıcı uygulamaya bağlı
+        view.findViewById<View>(R.id.shareOriginal).setOnClickListener {
+            dialog.dismiss()
+            shareUris(listOf(uri), null, "application/octet-stream")
+        }
+        view.findViewById<View>(R.id.shareCancel).setOnClickListener { dialog.dismiss() }
+        dialog.show()
     }
 
     private fun shareWithPrintedCaption() {
@@ -342,25 +343,29 @@ class ViewerActivity : MediaActivity() {
 
     private fun showMore(anchor: View) {
         val popup = PopupMenu(this, anchor)
-        if (!isVideo) popup.menu.add(0, 1, 0, R.string.action_edit_photo)
-        popup.menu.add(0, 2, 1, R.string.action_rename)
+        if (!isVideo) {
+            popup.menu.add(0, 1, 0, R.string.action_edit_photo)
+            popup.menu.add(0, 3, 1, R.string.action_edit_external)
+        }
+        popup.menu.add(0, 2, 2, R.string.action_rename)
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
-                1 -> editPhoto()
+                1 -> startActivity(Intent(this, EditorActivity::class.java).setData(uri))
                 2 -> showRenameDialog()
+                3 -> editPhotoExternal()
             }
             true
         }
         popup.show()
     }
 
-    private fun editPhoto() {
+    private fun editPhotoExternal() {
         val intent = Intent(Intent.ACTION_EDIT).apply {
             setDataAndType(uri, mime ?: "image/*")
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         try {
-            startActivity(Intent.createChooser(intent, getString(R.string.action_edit_photo)))
+            startActivity(Intent.createChooser(intent, getString(R.string.action_edit_external)))
         } catch (e: ActivityNotFoundException) {
             toast(R.string.no_app_found)
         }

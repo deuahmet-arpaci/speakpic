@@ -18,13 +18,14 @@
 
 <p>SpeakPic ("the app") lets you take photos, add spoken or typed descriptions to them, and manage them in a gallery.
 This policy explains what the app does with your information. <strong>The developer does not collect, store or sell your personal data.
-The app has no accounts, no analytics, no advertising and no developer servers.</strong></p>
+The app has no accounts, no analytics, no advertising and no developer servers.</strong> The only feature that sends data off your device on its own initiative is the optional AI edit, described below.</p>
 
 <h2>What the app accesses and why</h2>
 <ul>
   <li><strong>Camera</strong> – to take photos.</li>
-  <li><strong>Microphone</strong> – only while you tap the microphone button, to turn your spoken description into text.</li>
-  <li><strong>Photos and media on your device</strong> – to show them in the in-app gallery, to read and write descriptions, and to rename, edit, share or delete photos at your request. Android asks you for confirmation before the app changes or deletes photos that were taken with other apps.</li>
+  <li><strong>Microphone</strong> – while you dictate a description or record a video with sound.</li>
+  <li><strong>Internet</strong> – only for the optional AI edit described below.</li>
+  <li><strong>Photos, videos and media on your device</strong> – to show them in the in-app gallery, to read and write descriptions, and to rename, edit, share or delete them at your request. Android asks you for confirmation before the app changes or deletes photos that were taken with other apps.</li>
 </ul>
 
 <h2>Where your data goes</h2>
@@ -32,6 +33,8 @@ The app has no accounts, no analytics, no advertising and no developer servers.<
   <li><strong>Descriptions</strong> are stored inside the image file itself (EXIF fields <code>UserComment</code> and <code>ImageDescription</code>) on your device. If you share a photo, the description may travel with the file, depending on the app you share it with.</li>
   <li><strong>Speech recognition</strong> is performed by the speech recognition service installed on your device (usually provided by Google). Depending on your device and language settings, audio may be processed on that provider's servers. SpeakPic does not receive or keep a copy of your audio. Please see your device provider's privacy policy for details.</li>
   <li><strong>Reading descriptions aloud</strong> uses your device's text-to-speech engine.</li>
+  <li><strong>Optional AI edit (internet)</strong> – only if you open <em>Edit photo → AI edit</em>, enter your <em>own</em> Anthropic API key and tap <em>Apply</em>: a reduced copy of the photo (longest side 1024 px) and the text you typed or dictated are sent over an encrypted connection to Anthropic's API (api.anthropic.com), which returns suggested filter and adjustment values. The values are applied on your device. Your API key is stored only on your device. Nothing is sent unless you tap <em>Apply</em>, and the developer never receives it. Anthropic's own privacy policy applies to that data. You can remove the key at any time.</li>
+  <li><strong>Video speed changes</strong> and <strong>photo filters</strong> are processed on your device.</li>
   <li><strong>Sharing and editing</strong> only happen when you choose to, and are handled by the app you select.</li>
 </ul>
 
@@ -54,13 +57,14 @@ The app has no accounts, no analytics, no advertising and no developer servers.<
 
 <p>SpeakPic ("uygulama"), fotoğraf çekmenizi, fotoğraflara sesli veya yazılı açıklama eklemenizi ve bunları bir galeride yönetmenizi sağlar.
 Bu politika, uygulamanın bilgilerinizle ne yaptığını açıklar. <strong>Geliştirici kişisel verilerinizi toplamaz, saklamaz ve satmaz.
-Uygulamada hesap, analiz aracı, reklam ve geliştiriciye ait sunucu yoktur.</strong></p>
+Uygulamada hesap, analiz aracı, reklam ve geliştiriciye ait sunucu yoktur.</strong> Cihazınızın dışına kendi başına veri gönderen tek özellik, aşağıda anlatılan isteğe bağlı yapay zekâ ile düzenlemedir.</p>
 
 <h2>Uygulamanın eriştiği veriler ve nedenleri</h2>
 <ul>
   <li><strong>Kamera</strong> – fotoğraf çekmek için.</li>
-  <li><strong>Mikrofon</strong> – yalnızca mikrofon düğmesine dokunduğunuzda, sesli açıklamanızı yazıya çevirmek için.</li>
-  <li><strong>Cihazınızdaki fotoğraflar</strong> – uygulama içi galeride göstermek, açıklamaları okuyup yazmak ve isteğiniz üzerine fotoğrafları yeniden adlandırmak, düzenlemek, paylaşmak veya silmek için. Başka uygulamalarla çekilmiş fotoğrafları değiştirmeden veya silmeden önce Android sizden onay ister.</li>
+  <li><strong>Mikrofon</strong> – sesli açıklama yazdırırken veya sesli video kaydederken.</li>
+  <li><strong>İnternet</strong> – yalnızca aşağıda anlatılan isteğe bağlı yapay zekâ ile düzenleme için.</li>
+  <li><strong>Cihazınızdaki fotoğraf ve videolar</strong> – uygulama içi galeride göstermek, açıklamaları okuyup yazmak ve isteğiniz üzerine yeniden adlandırmak, düzenlemek, paylaşmak veya silmek için. Başka uygulamalarla çekilmiş fotoğrafları değiştirmeden veya silmeden önce Android sizden onay ister.</li>
 </ul>
 
 <h2>Verileriniz nereye gider</h2>
@@ -68,6 +72,8 @@ Uygulamada hesap, analiz aracı, reklam ve geliştiriciye ait sunucu yoktur.</st
   <li><strong>Açıklamalar</strong>, cihazınızda görüntü dosyasının içine (EXIF alanları <code>UserComment</code> ve <code>ImageDescription</code>) kaydedilir. Bir fotoğrafı paylaşırsanız, açıklama paylaştığınız uygulamaya bağlı olarak dosyayla birlikte gidebilir.</li>
   <li><strong>Konuşma tanıma</strong>, cihazınızda kurulu konuşma tanıma servisi (genellikle Google tarafından sağlanır) ile yapılır. Cihazınıza ve dil ayarlarınıza bağlı olarak ses, bu sağlayıcının sunucularında işlenebilir. SpeakPic sesinizin bir kopyasını almaz ve saklamaz. Ayrıntılar için cihaz sağlayıcınızın gizlilik politikasına bakın.</li>
   <li><strong>Açıklamayı sesli okuma</strong>, cihazınızın metin okuma motorunu kullanır.</li>
+  <li><strong>İsteğe bağlı yapay zekâ ile düzenleme (internet)</strong> – yalnızca <em>Fotoğrafı düzenle → Yapay zekâ ile düzenle</em> bölümünü açıp <em>kendi</em> Anthropic API anahtarınızı girer ve <em>Uygula</em>'ya dokunursanız: fotoğrafın küçültülmüş bir kopyası (en uzun kenar 1024 px) ile yazdığınız ya da dikte ettiğiniz metin, şifreli bağlantıyla Anthropic'in API'sine (api.anthropic.com) gönderilir; API filtre ve ayar değerleri önerir. Bu değerler cihazınızda uygulanır. API anahtarınız yalnızca cihazınızda saklanır. <em>Uygula</em>'ya dokunmadıkça hiçbir şey gönderilmez ve geliştirici bu veriyi hiçbir zaman almaz. Bu veriler için Anthropic'in kendi gizlilik politikası geçerlidir. Anahtarı istediğiniz zaman silebilirsiniz.</li>
+  <li><strong>Video hız değişimleri</strong> ve <strong>fotoğraf filtreleri</strong> cihazınızda işlenir.</li>
   <li><strong>Paylaşma ve düzenleme</strong> yalnızca siz seçtiğinizde gerçekleşir ve seçtiğiniz uygulama tarafından yürütülür.</li>
 </ul>
 

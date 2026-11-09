@@ -18,7 +18,7 @@
             android:id="@+id/backButton"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/icon_btn_bg"
             android:contentDescription="@string/action_back"
             android:padding="12dp"
             android:src="@drawable/ic_back" />
@@ -36,27 +36,30 @@
 
         <ImageButton
             android:id="@+id/shareButton"
+            android:layout_marginStart="6dp"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/icon_btn_bg"
             android:contentDescription="@string/action_share"
             android:padding="12dp"
             android:src="@drawable/ic_share" />
 
         <ImageButton
             android:id="@+id/deleteButton"
+            android:layout_marginStart="6dp"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/icon_btn_bg"
             android:contentDescription="@string/action_delete"
             android:padding="12dp"
             android:src="@drawable/ic_delete" />
 
         <ImageButton
             android:id="@+id/moreButton"
+            android:layout_marginStart="6dp"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="@drawable/icon_btn_bg"
             android:contentDescription="@string/action_more"
             android:padding="12dp"
             android:src="@drawable/ic_more" />
@@ -118,7 +121,7 @@
                 android:layout_height="48dp"
                 android:layout_marginStart="12dp"
                 android:layout_marginEnd="12dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:background="@drawable/icon_btn_bg"
                 android:contentDescription="@string/action_read_aloud"
                 android:padding="12dp"
                 android:src="@drawable/ic_volume" />
@@ -140,7 +143,7 @@
                 android:layout_height="48dp"
                 android:layout_marginStart="12dp"
                 android:layout_marginEnd="12dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:background="@drawable/icon_btn_bg"
                 android:contentDescription="@string/action_edit_desc"
                 android:padding="12dp"
                 android:src="@drawable/ic_edit" />
@@ -151,7 +154,7 @@
                 android:layout_height="48dp"
                 android:layout_marginStart="12dp"
                 android:layout_marginEnd="12dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
+                android:background="@drawable/icon_btn_bg"
                 android:contentDescription="@string/action_copy_desc"
                 android:padding="12dp"
                 android:src="@drawable/ic_copy" />

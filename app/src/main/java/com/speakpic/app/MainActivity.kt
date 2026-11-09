@@ -10,18 +10,25 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.MediaStore
+import android.util.Size
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.view.ViewGroup
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.SwitchCompat
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.FocusMeteringAction
@@ -29,6 +36,9 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.core.UseCase
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.extensions.ExtensionMode
 import androidx.camera.extensions.ExtensionsManager
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -52,9 +62,11 @@ class MainActivity : MediaActivity() {
     private lateinit var previewView: PreviewView
     private lateinit var controls: View
     private lateinit var gridOverlay: GridOverlayView
+    private lateinit var gridColumn: View
     private lateinit var focusRing: View
     private lateinit var flashOverlay: View
     private lateinit var flashButton: ImageButton
+    private lateinit var settingsButton: ImageButton
     private lateinit var hdrButton: TextView
     private lateinit var zoomSlider: SeekBar
     private lateinit var thumb: ImageView
@@ -65,6 +77,22 @@ class MainActivity : MediaActivity() {
     private lateinit var recBar: View
     private lateinit var recBarDot: View
     private lateinit var recTimer: TextView
+
+    // --- Video hız kontrolü ---
+    private lateinit var speedColumn: View
+    private lateinit var speedSlider: SeekBar
+    private lateinit var speedReadout: TextView
+
+    // --- Kamera ayarları paneli ---
+    private lateinit var settingsPanel: View
+    private lateinit var chipRatio43: TextView
+    private lateinit var chipRatio169: TextView
+    private lateinit var chipSizeS: TextView
+    private lateinit var chipSizeM: TextView
+    private lateinit var chipSizeL: TextView
+    private lateinit var nightSwitch: SwitchCompat
+    private lateinit var evSlider: SeekBar
+    private lateinit var evValue: TextView
 
     // --- Bilgi paneli ---
     private lateinit var infoPanel: View
@@ -87,13 +115,30 @@ class MainActivity : MediaActivity() {
     private var torchOn = false
     private var videoMode = false
     private var hdrOn = false
+    private var nightOn = false
+    private var nightFallback = false
+    private var nightFallbackApplied = false
+    private var ratio169 = false
+    private var sizeIndex = 2        // 0 küçük, 1 orta, 2 büyük
+    private var evIndex = 0
+    private var evStep = 0f
     private var sliding = false
+    private var updatingUi = false
+    private var speedHintShown = false
+
+    // Video hız olayları
+    private val speeds = floatArrayOf(0.25f, 0.5f, 1f, 2f, 4f)
+    private val speedLabels = arrayOf("¼×", "½×", "1×", "2×", "4×")
+    private val speedEvents = ArrayList<SpeedEvent>()
+    private var recStartElapsed = 0L
+    private var exporter: SpeedExporter? = null
 
     private var lastPhotoUri: Uri? = null
     private var listenTarget: Uri? = null
     private var currentNote = ""
     private lateinit var speech: SpeechHelper
 
+    private val prefs by lazy { getSharedPreferences("speakpic", MODE_PRIVATE) }
     private val handler = Handler(Looper.getMainLooper())
     private val hideMicRunnable = Runnable {
         if (!speech.listening && infoPanel.visibility != View.VISIBLE) micButton.visibility = View.GONE
@@ -123,6 +168,9 @@ class MainActivity : MediaActivity() {
         bindViews()
         controls.applySystemBarPadding()
 
+        ratio169 = prefs.getBoolean("ratio169", false)
+        sizeIndex = prefs.getInt("sizeIndex", 2)
+
         speech = SpeechHelper(
             this,
             onState = { on -> onListeningState(on) },
@@ -136,7 +184,9 @@ class MainActivity : MediaActivity() {
 
         setupControls()
         setupGestures()
+        updateSettingsUi()
         updateModeUi()
+        onSpeedChanged(speedSlider.progress)
 
         // Dil değişince/ekran yeniden oluşturulunca son fotoğrafı koru
         savedInstanceState?.getString("photo")?.let { saved ->
@@ -169,9 +219,11 @@ class MainActivity : MediaActivity() {
         previewView = findViewById(R.id.previewView)
         controls = findViewById(R.id.controls)
         gridOverlay = findViewById(R.id.gridOverlay)
+        gridColumn = findViewById(R.id.gridColumn)
         focusRing = findViewById(R.id.focusRing)
         flashOverlay = findViewById(R.id.flashOverlay)
         flashButton = findViewById(R.id.flashButton)
+        settingsButton = findViewById(R.id.settingsButton)
         hdrButton = findViewById(R.id.hdrButton)
         zoomSlider = findViewById(R.id.zoomSlider)
         thumb = findViewById(R.id.thumb)
@@ -182,6 +234,18 @@ class MainActivity : MediaActivity() {
         recBar = findViewById(R.id.recBar)
         recBarDot = findViewById(R.id.recBarDot)
         recTimer = findViewById(R.id.recTimer)
+        speedColumn = findViewById(R.id.speedColumn)
+        speedSlider = findViewById(R.id.speedSlider)
+        speedReadout = findViewById(R.id.speedReadout)
+        settingsPanel = findViewById(R.id.settingsPanel)
+        chipRatio43 = findViewById(R.id.chipRatio43)
+        chipRatio169 = findViewById(R.id.chipRatio169)
+        chipSizeS = findViewById(R.id.chipSizeS)
+        chipSizeM = findViewById(R.id.chipSizeM)
+        chipSizeL = findViewById(R.id.chipSizeL)
+        nightSwitch = findViewById(R.id.nightSwitch)
+        evSlider = findViewById(R.id.evSlider)
+        evValue = findViewById(R.id.evValue)
         infoPanel = findViewById(R.id.infoPanel)
         tabMeta = findViewById(R.id.tabMeta)
         tabNote = findViewById(R.id.tabNote)
@@ -217,6 +281,10 @@ class MainActivity : MediaActivity() {
         flashButton.setOnClickListener { cycleFlash() }
         hdrButton.setOnClickListener {
             hdrOn = !hdrOn
+            if (hdrOn && nightOn) {
+                nightOn = false
+                updateSettingsUi()
+            }
             startCamera()
         }
         modePhoto.setOnClickListener { setMode(false) }
@@ -230,11 +298,108 @@ class MainActivity : MediaActivity() {
             override fun onStopTrackingTouch(sb: SeekBar?) { sliding = false }
         })
 
+        // Video hız çubuğu: kayıt sırasında oynatılan her değişiklik zaman damgasıyla saklanır
+        speedSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                onSpeedChanged(progress)
+            }
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
+        })
+        speedReadout.setOnClickListener { speedSlider.progress = 2 }
+
+        // Kamera ayarları paneli
+        settingsButton.setOnClickListener {
+            settingsPanel.visibility = if (settingsPanel.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        }
+        findViewById<View>(R.id.settingsClose).setOnClickListener { settingsPanel.visibility = View.GONE }
+        chipRatio43.setOnClickListener { setRatio(false) }
+        chipRatio169.setOnClickListener { setRatio(true) }
+        chipSizeS.setOnClickListener { setSize(0) }
+        chipSizeM.setOnClickListener { setSize(1) }
+        chipSizeL.setOnClickListener { setSize(2) }
+        nightSwitch.setOnCheckedChangeListener { _, checked ->
+            if (updatingUi) return@setOnCheckedChangeListener
+            nightOn = checked
+            nightFallbackApplied = false
+            if (checked) hdrOn = false
+            startCamera()
+        }
+        evSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                if (!fromUser || updatingUi) return
+                val range = camera?.cameraInfo?.exposureState?.exposureCompensationRange ?: return
+                evIndex = range.lower + progress
+                evValue.text = formatEv(evIndex)
+                camera?.cameraControl?.setExposureCompensationIndex(evIndex)
+            }
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
+        })
+
         micButton.setOnClickListener { onMicClicked() }
         findViewById<View>(R.id.panelClose).setOnClickListener { hidePanel() }
         tabMeta.setOnClickListener { selectTab(0) }
         tabNote.setOnClickListener { selectTab(1) }
         selectTab(0)
+    }
+
+    // ------------------------------------------------------------------ Kamera ayarları
+
+    private fun setRatio(wide: Boolean) {
+        if (ratio169 == wide) return
+        ratio169 = wide
+        prefs.edit().putBoolean("ratio169", wide).apply()
+        updateSettingsUi()
+        startCamera()
+    }
+
+    private fun setSize(index: Int) {
+        if (sizeIndex == index) return
+        sizeIndex = index
+        prefs.edit().putInt("sizeIndex", index).apply()
+        updateSettingsUi()
+        startCamera()
+    }
+
+    private fun updateSettingsUi() {
+        fun chip(tv: TextView, on: Boolean) =
+            tv.setBackgroundResource(if (on) R.drawable.chip_on else R.drawable.chip_off)
+        chip(chipRatio43, !ratio169)
+        chip(chipRatio169, ratio169)
+        chip(chipSizeS, sizeIndex == 0)
+        chip(chipSizeM, sizeIndex == 1)
+        chip(chipSizeL, sizeIndex == 2)
+        updatingUi = true
+        nightSwitch.isChecked = nightOn
+        updatingUi = false
+    }
+
+    private fun formatEv(index: Int) = String.format(Locale.US, "%+.1f EV", index * evStep)
+
+    /** Kamera bağlandıktan sonra pozlama çubuğunu cihazın gerçek aralığına göre ayarlar. */
+    private fun applyExposureState() {
+        val cam = camera ?: return
+        val st = cam.cameraInfo.exposureState
+        evSlider.isEnabled = st.isExposureCompensationSupported
+        if (!st.isExposureCompensationSupported) {
+            evValue.text = "—"
+            return
+        }
+        val range = st.exposureCompensationRange
+        evStep = st.exposureCompensationStep.toFloat()
+        if (nightFallback && !nightFallbackApplied) {
+            evIndex = maxOf(evIndex, range.upper * 2 / 3)
+            nightFallbackApplied = true
+            toast(R.string.night_fallback)
+        }
+        evIndex = evIndex.coerceIn(range.lower, range.upper)
+        updatingUi = true
+        evSlider.max = range.upper - range.lower
+        evSlider.progress = evIndex - range.lower
+        updatingUi = false
+        evValue.text = formatEv(evIndex)
+        cam.cameraControl.setExposureCompensationIndex(evIndex)
     }
 
     // ------------------------------------------------------------------ Mod (fotoğraf / video)
@@ -254,12 +419,24 @@ class MainActivity : MediaActivity() {
         flashMode = ImageCapture.FLASH_MODE_OFF
         torchOn = false
         updateFlashIcon(false)
+
+        // Fotoğraf: kırpmadan gerçek çerçeve (FIT); video: tam ekran
+        previewView.scaleType =
+            if (videoMode) PreviewView.ScaleType.FILL_CENTER else PreviewView.ScaleType.FIT_CENTER
+        gridColumn.visibility = if (videoMode) View.GONE else View.VISIBLE
+        speedColumn.visibility = if (videoMode) View.VISIBLE else View.GONE
+        settingsButton.visibility = if (videoMode) View.GONE else View.VISIBLE
         if (videoMode) {
+            settingsPanel.visibility = View.GONE
             speech.cancel()
             handler.removeCallbacks(hideMicRunnable)
             micButton.visibility = View.GONE
             hidePanel()
             hdrButton.visibility = View.GONE
+            if (!speedHintShown) {
+                speedHintShown = true
+                toast(R.string.speed_hint)
+            }
         }
     }
 
@@ -278,11 +455,9 @@ class MainActivity : MediaActivity() {
     }
 
     private fun bindCamera(provider: ProcessCameraProvider) {
-        val preview = Preview.Builder().build().also {
-            it.setSurfaceProvider(previewView.surfaceProvider)
-        }
-        val cases = mutableListOf<UseCase>(preview)
+        val cases = mutableListOf<UseCase>()
         if (videoMode) {
+            cases += Preview.Builder().build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
             val recorder = Recorder.Builder()
                 .setQualitySelector(
                     QualitySelector.from(
@@ -296,8 +471,33 @@ class MainActivity : MediaActivity() {
             imageCapture = null
             cases += vc
         } else {
+            val aspect = if (ratio169) AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY
+            else AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY
+            val sizeStrategy = when (sizeIndex) {
+                0 -> ResolutionStrategy(
+                    if (ratio169) Size(1920, 1080) else Size(1600, 1200),
+                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER
+                )
+                1 -> ResolutionStrategy(
+                    if (ratio169) Size(3840, 2160) else Size(3264, 2448),
+                    ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER
+                )
+                else -> ResolutionStrategy.HIGHEST_AVAILABLE_STRATEGY
+            }
+            val photoSelector = ResolutionSelector.Builder()
+                .setAspectRatioStrategy(aspect)
+                .setResolutionStrategy(sizeStrategy)
+                .build()
+            val previewSelector = ResolutionSelector.Builder().setAspectRatioStrategy(aspect).build()
+
+            cases += Preview.Builder().setResolutionSelector(previewSelector).build()
+                .also { it.setSurfaceProvider(previewView.surfaceProvider) }
             val ic = ImageCapture.Builder()
-                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                .setResolutionSelector(photoSelector)
+                .setCaptureMode(
+                    if (sizeIndex == 2 || nightOn) ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY
+                    else ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
+                )
                 .setFlashMode(flashMode)
                 .build()
             imageCapture = ic
@@ -307,15 +507,26 @@ class MainActivity : MediaActivity() {
 
         var selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
         val em = extensionsManager
-        val hdrAvailable = !videoMode && try {
-            em != null && em.isExtensionAvailable(selector, ExtensionMode.HDR)
+        fun available(mode: Int) = !videoMode && try {
+            em != null && em.isExtensionAvailable(selector, mode)
         } catch (e: Exception) { false }
+
+        val hdrAvailable = available(ExtensionMode.HDR)
+        val nightAvailable = available(ExtensionMode.NIGHT)
         hdrButton.visibility = if (hdrAvailable) View.VISIBLE else View.GONE
         if (!hdrAvailable) hdrOn = false
         hdrButton.setTextColor(if (hdrOn) Color.parseColor("#FFD54F") else Color.WHITE)
-        if (hdrOn && em != null && !videoMode) {
-            selector = em.getExtensionEnabledCameraSelector(selector, ExtensionMode.HDR)
+
+        val wanted = when {
+            nightOn && nightAvailable -> ExtensionMode.NIGHT
+            hdrOn && hdrAvailable -> ExtensionMode.HDR
+            else -> ExtensionMode.NONE
         }
+        if (wanted != ExtensionMode.NONE && em != null) {
+            selector = em.getExtensionEnabledCameraSelector(selector, wanted)
+        }
+        // Cihaz gece modu eklentisini desteklemiyorsa: pozlamayı artırarak aydınlat
+        nightFallback = nightOn && !nightAvailable && !videoMode
 
         try {
             provider.unbindAll()
@@ -323,6 +534,7 @@ class MainActivity : MediaActivity() {
             camera?.cameraInfo?.zoomState?.observe(this) { state ->
                 if (!sliding) zoomSlider.progress = (state.linearZoom * 100).toInt()
             }
+            applyExposureState()
         } catch (e: Exception) {
             toast(getString(R.string.error_generic, e.message ?: ""))
         }
@@ -462,6 +674,23 @@ class MainActivity : MediaActivity() {
 
     // ------------------------------------------------------------------ Video
 
+    private fun currentSpeed() = speeds[speedSlider.progress.coerceIn(0, speeds.lastIndex)]
+
+    private fun onSpeedChanged(progress: Int) {
+        val i = progress.coerceIn(0, speeds.lastIndex)
+        speedReadout.text = speedLabels[i]
+        speedReadout.setTextColor(
+            when {
+                speeds[i] > 1f -> Color.parseColor("#FFB74D")
+                speeds[i] < 1f -> Color.parseColor("#4FC3F7")
+                else -> Color.WHITE
+            }
+        )
+        if (recording != null) {
+            speedEvents.add(SpeedEvent(SystemClock.elapsedRealtime() - recStartElapsed, speeds[i]))
+        }
+    }
+
     private fun toggleRecording() {
         val active = recording
         if (active != null) {
@@ -498,9 +727,25 @@ class MainActivity : MediaActivity() {
         var pending = vc.output.prepareRecording(this, output)
         if (hasAudio) pending = pending.withAudioEnabled()
 
+        // Hız zaman çizelgesi: ilk olay kayıt başındaki hız
+        speedEvents.clear()
+        recStartElapsed = SystemClock.elapsedRealtime()
+        speedEvents.add(SpeedEvent(0L, currentSpeed()))
+
         recording = pending.start(ContextCompat.getMainExecutor(this)) { event ->
             when (event) {
-                is VideoRecordEvent.Start -> setRecordingUi(true)
+                is VideoRecordEvent.Start -> {
+                    // Gerçek kayıt, düğmeye basıştan biraz sonra başlar: zaman çizelgesini buna göre kaydır
+                    val now = SystemClock.elapsedRealtime()
+                    val delta = now - recStartElapsed
+                    val shifted = speedEvents.mapIndexed { i, e ->
+                        if (i == 0) e else SpeedEvent((e.timeMs - delta).coerceAtLeast(0L), e.speed)
+                    }
+                    speedEvents.clear()
+                    speedEvents.addAll(shifted)
+                    recStartElapsed = now
+                    setRecordingUi(true)
+                }
                 is VideoRecordEvent.Status -> {
                     val sec = event.recordingStats.recordedDurationNanos / 1_000_000_000L
                     recTimer.text = String.format(Locale.US, "%02d:%02d", sec / 60, sec % 60)
@@ -509,13 +754,67 @@ class MainActivity : MediaActivity() {
                     recording = null
                     setRecordingUi(false)
                     if (!event.hasError()) {
-                        onVideoSaved(event.outputResults.outputUri)
+                        val durationMs = event.recordingStats.recordedDurationNanos / 1_000_000L
+                        val events = speedEvents.filter { it.timeMs < durationMs || it.timeMs == 0L }
+                        val rawUri = event.outputResults.outputUri
+                        if (events.any { it.speed != 1f }) processSpeed(rawUri, events) else onVideoSaved(rawUri)
                     } else {
                         toast(getString(R.string.error_generic, event.cause?.message ?: event.error.toString()))
                     }
                 }
             }
         }
+    }
+
+    /** Kayıt sırasında hız değiştirildiyse videoyu bu hızlarla yeniden işler. */
+    private fun processSpeed(rawUri: Uri, events: List<SpeedEvent>) {
+        val pad = dpToPx(20)
+        val label = TextView(this).apply {
+            setText(R.string.processing_speed)
+            setTextColor(Color.WHITE)
+            textSize = 15f
+        }
+        val bar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100
+            isIndeterminate = false
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = pad / 2 }
+        }
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, pad, pad, pad)
+            addView(label)
+            addView(bar)
+        }
+        val exp = SpeedExporter(this)
+        exporter = exp
+        val dialog = AlertDialog.Builder(this)
+            .setView(box)
+            .setCancelable(false)
+            .setNegativeButton(R.string.action_cancel) { _, _ ->
+                exp.cancel()
+                exporter = null
+                onVideoSaved(rawUri) // iptal: hızlandırılmamış ham kayıt kalır
+            }
+            .create()
+        dialog.window?.setBackgroundDrawableResource(R.drawable.card_bg)
+        dialog.show()
+
+        exp.export(
+            rawUri, events,
+            onProgress = { bar.progress = it },
+            onDone = { newUri, err ->
+                if (dialog.isShowing) dialog.dismiss()
+                exporter = null
+                if (newUri != null) {
+                    onVideoSaved(newUri)
+                } else {
+                    err?.let { toast(getString(R.string.error_generic, it)) }
+                    onVideoSaved(rawUri)
+                }
+            }
+        )
     }
 
     private fun setRecordingUi(on: Boolean) {
@@ -618,12 +917,10 @@ class MainActivity : MediaActivity() {
 
     // ------------------------------------------------------------------ Bilgi paneli
 
-    private fun dp(v: Int) = v * resources.displayMetrics.density
-
     private fun showPanel(tab: Int) {
         selectTab(tab)
         if (infoPanel.visibility != View.VISIBLE) {
-            infoPanel.translationX = dp(260)
+            infoPanel.translationX = dpToPx(260).toFloat()
             infoPanel.visibility = View.VISIBLE
             infoPanel.animate().translationX(0f).setDuration(200).start()
         }
@@ -631,7 +928,7 @@ class MainActivity : MediaActivity() {
 
     private fun hidePanel() {
         if (infoPanel.visibility != View.VISIBLE) return
-        infoPanel.animate().translationX(dp(260)).setDuration(200).withEndAction {
+        infoPanel.animate().translationX(dpToPx(260).toFloat()).setDuration(200).withEndAction {
             infoPanel.visibility = View.GONE
         }.start()
     }
@@ -658,6 +955,7 @@ class MainActivity : MediaActivity() {
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
         speech.cancel()
+        exporter?.cancel()
         super.onDestroy()
     }
 }
